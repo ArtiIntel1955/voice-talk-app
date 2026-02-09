@@ -9,6 +9,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 
 from src.config.logger import get_logger
+from src.config.settings import get_settings
 from src.audio.capture import AudioCapture
 from src.audio.playback import AudioPlayback
 
@@ -196,15 +197,34 @@ class SettingsDialog(QDialog):
 
     def test_api(self):
         """Test API connections"""
-        hf_token = self.hf_token_input.text()
+        hf_token = self.hf_token_input.text().strip()
 
         if not hf_token:
             QMessageBox.warning(self, "No API Key", "Please enter HuggingFace API token")
             return
 
-        QMessageBox.information(self, "API Test",
-                              "Testing API connections...\n\n"
-                              "This feature coming soon!")
+        # Test HuggingFace connection
+        try:
+            from src.ai.conversation.huggingface_client import HuggingFaceClient
+
+            client = HuggingFaceClient(api_key=hf_token)
+            response, success = client.chat("Hello, are you working?")
+
+            if success:
+                QMessageBox.information(
+                    self, "API Test Successful",
+                    f"✓ HuggingFace API is working!\n\nResponse: {response[:100]}..."
+                )
+            else:
+                QMessageBox.warning(
+                    self, "API Test Failed",
+                    "HuggingFace API returned an error. Please check your API key."
+                )
+        except Exception as e:
+            QMessageBox.critical(
+                self, "API Test Error",
+                f"Failed to test API:\n\n{str(e)}"
+            )
 
     def save_settings(self):
         """Save settings"""

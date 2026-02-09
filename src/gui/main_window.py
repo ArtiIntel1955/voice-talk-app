@@ -21,6 +21,7 @@ from src.config.logger import get_logger
 from src.audio.capture import AudioCapture
 from src.audio.playback import AudioPlayback
 from src.speech.synthesis.pyttsx3_engine import get_pyttsx3_engine
+from src.speech.recognition.vosk_engine import get_vosk_engine
 from src.ai.conversation.huggingface_client import get_huggingface_client
 from src.ai.quota_manager import get_quota_manager
 
@@ -28,42 +29,97 @@ logger = get_logger(__name__)
 
 
 class VoiceInputThread(QThread):
-    """Thread for capturing voice input"""
+    """Thread for capturing voice input with real-time transcription"""
     transcription_ready = pyqtSignal(str)
+    transcription_partial = pyqtSignal(str)
     error_occurred = pyqtSignal(str)
+    recording_started = pyqtSignal()
+    recording_stopped = pyqtSignal()
 
-    def __init__(self):
+    def __init__(self, duration_seconds: int = 5):
         super().__init__()
         self.is_recording = False
         self.audio_capture = AudioCapture()
+        self.vosk_engine = get_vosk_engine()
+        self.duration_seconds = duration_seconds
+        self.final_text = ""
 
     def run(self):
-        """Capture audio in thread"""
+        """Capture and transcribe audio in real-time"""
         try:
+            settings = get_settings()
+
+            # Check if Vosk is available
+            if not self.vosk_engine.is_initialized:
+                # Fallback to silent recording mode
+                logger.warning("Vosk not initialized, will record silently")
+
+            # Start recording
             if not self.audio_capture.start():
                 self.error_occurred.emit("Failed to start audio capture")
                 return
 
             self.is_recording = True
+            self.recording_started.emit()
 
-            # Simple recording for 5 seconds as example
+            # Record for specified duration
             import time
-            time.sleep(5)
+            import struct
 
+            start_time = time.time()
+            audio_data = bytearray()
+            frame_count = 0
+            partial_text = ""
+
+            while self.is_recording and (time.time() - start_time) < self.duration_seconds:
+                # Read audio frame
+                try:
+                    data = self.audio_capture.stream.read(
+                        self.audio_capture.chunk_size,
+                        exception_on_overflow=False
+                    )
+                    audio_data.extend(data)
+                    frame_count += 1
+
+                    # Process with Vosk if available
+                    if self.vosk_engine.is_initialized:
+                        transcribed, confidence = self.vosk_engine.transcribe_audio(bytes(data))
+                        if transcribed and transcribed != partial_text:
+                            partial_text = transcribed
+                            self.transcription_partial.emit(f"Listening... {transcribed}")
+                            self.final_text = transcribed
+
+                    # Update UI every frame to show recording is active
+                    if frame_count % 10 == 0:  # Update every ~0.3 seconds
+                        elapsed = time.time() - start_time
+                        self.transcription_partial.emit(f"Recording... {elapsed:.0f}s")
+
+                except Exception as e:
+                    logger.error(f"Error reading audio frame: {e}")
+                    continue
+
+            # Stop recording
             self.audio_capture.stop()
             self.is_recording = False
+            self.recording_stopped.emit()
 
-            # Transcribe would happen here
-            self.transcription_ready.emit("Sample transcription from voice input")
+            # Emit final result
+            if self.final_text:
+                self.transcription_ready.emit(self.final_text)
+            else:
+                self.error_occurred.emit("No speech detected. Please try again.")
 
         except Exception as e:
             logger.error(f"Voice input error: {e}")
             self.error_occurred.emit(f"Voice error: {str(e)}")
+        finally:
+            if self.audio_capture.is_recording:
+                self.audio_capture.stop()
+            self.is_recording = False
 
     def stop_recording(self):
         """Stop the recording"""
         self.is_recording = False
-        self.audio_capture.stop()
 
 
 class ConversationThread(QThread):
@@ -378,8 +434,9 @@ class MainWindow(QMainWindow):
         self.recording_label.setText("🔴 RECORDING")
 
         # Record in thread
-        self.voice_thread = VoiceInputThread()
+        self.voice_thread = VoiceInputThread(duration_seconds=5)
         self.voice_thread.transcription_ready.connect(self.on_transcription_ready)
+        self.voice_thread.transcription_partial.connect(self.on_transcription_partial)
         self.voice_thread.error_occurred.connect(self.on_voice_error)
         self.voice_thread.start()
 
@@ -390,6 +447,10 @@ class MainWindow(QMainWindow):
         self.status_label.setText("Transcription complete")
         self.recording_label.setText("")
         self.send_message()  # Auto-send
+
+    def on_transcription_partial(self, text: str):
+        """Handle partial transcription (live update)"""
+        self.status_label.setText(text)
 
     def on_voice_error(self, error: str):
         """Handle voice error"""
