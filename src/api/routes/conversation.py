@@ -5,12 +5,12 @@ from fastapi.responses import JSONResponse
 import uuid
 from datetime import datetime
 
-from ..api.schemas import ChatRequest, ChatResponse, Message, ErrorResponse
-from ..ai.conversation.huggingface_client import get_huggingface_client
-from ..ai.quota_manager import get_quota_manager
-from ..database.database import get_async_db
-from ..database.models import ConversationSession, Message as MessageModel
-from ..config.logger import get_logger
+from src.api.schemas import ChatRequest, ChatResponse, Message, ErrorResponse
+from src.ai.conversation.huggingface_client import get_huggingface_client
+from src.ai.quota_manager import get_quota_manager
+from src.database.database import get_async_db
+from src.database.models import ConversationSession, Message as MessageModel
+from src.config.logger import get_logger
 
 logger = get_logger(__name__)
 

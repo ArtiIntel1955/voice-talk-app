@@ -128,6 +128,7 @@ data/logs/
 data/cache/
 data/audio_uploads/
 models/vosk_models/model/
+models/vosk_models/vosk-model-small-en-us-0.15/
 
 # IDE
 .vscode/

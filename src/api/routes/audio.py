@@ -5,10 +5,10 @@ from fastapi import APIRouter, HTTPException, UploadFile, File
 from pathlib import Path
 import os
 
-from ..audio.io import AudioFileIO
-from ..speech.recognition.vosk_engine import get_vosk_engine
-from ..config.logger import get_logger
-from ..config.settings import get_settings
+from src.audio.io import AudioFileIO
+from src.speech.recognition.vosk_engine import get_vosk_engine
+from src.config.logger import get_logger
+from src.config.settings import get_settings
 
 logger = get_logger(__name__)
 

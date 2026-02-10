@@ -7,11 +7,11 @@ from typing import Optional
 from pathlib import Path
 import tempfile
 
-from ..api.schemas import SpeakRequest, SpeakResponse
-from ..speech.synthesis.pyttsx3_engine import get_pyttsx3_engine
-from ..ai.quota_manager import get_quota_manager
-from ..audio.io import AudioFileIO
-from ..config.logger import get_logger
+from src.api.schemas import SpeakRequest, SpeakResponse
+from src.speech.synthesis.pyttsx3_engine import get_pyttsx3_engine
+from src.ai.quota_manager import get_quota_manager
+from src.audio.io import AudioFileIO
+from src.config.logger import get_logger
 
 logger = get_logger(__name__)
 

@@ -2,9 +2,9 @@
 
 from fastapi import APIRouter, HTTPException
 
-from ..api.schemas import CommandExecuteRequest, CommandExecuteResponse
-from ..ai.commands.registry import get_command_registry
-from ..config.logger import get_logger
+from src.api.schemas import CommandExecuteRequest, CommandExecuteResponse
+from src.ai.commands.registry import get_command_registry
+from src.config.logger import get_logger
 
 logger = get_logger(__name__)
 

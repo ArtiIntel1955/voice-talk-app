@@ -5,10 +5,10 @@ import numpy as np
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from typing import Optional
 
-from ..api.schemas import TranscribeRequest, TranscribeResponse
-from ..speech.recognition.vosk_engine import get_vosk_engine
-from ..ai.quota_manager import get_quota_manager
-from ..config.logger import get_logger
+from src.api.schemas import TranscribeRequest, TranscribeResponse
+from src.speech.recognition.vosk_engine import get_vosk_engine
+from src.ai.quota_manager import get_quota_manager
+from src.config.logger import get_logger
 
 logger = get_logger(__name__)
 
